@@ -9,7 +9,6 @@ export default function (options = {}) {
   return Vir({
     data: {
       data: [],
-      lock: false,
       state: 'pending'
     },
     events: {
@@ -18,23 +17,27 @@ export default function (options = {}) {
     watch: {
       data(result) {
         this.render(result.value)
+      },
+      state(result) {
+        if (result.value == 'finish') {
+          this.destroy()
+        }
       }
     },
     methods: {
       load() {
-        if (this.get('lock')) {
+        let state = this.get('state')
+        if (state == 'loading' || state == 'finish') {
           return
         }
-        this.set({
-          'state': 'loading',
-          'lock': true
+        this.set('state', 'loading')
+        this.fetch((state) => {
+          this.set('state', state)
         })
-        this.fetch((state = 'done') => {
-          this.set({
-            'state': state,
-            'lock': false
-          })
-        })
+      },
+      destroy() {
+        let space = 'loadmore' + this._uid
+        $(window).off(`scroll.${space} resize.${space}`)
       },
       fetch(done) {},
       render(data) {}
@@ -44,9 +47,10 @@ export default function (options = {}) {
         return
       }
 
-      const $window = $(window)
-      $window.on('scroll resize', () => {
-        if (this.get('lock')) {
+      let $window = $(window)
+      let space = 'loadmore' + this._uid
+      $window.on(`scroll.${space} resize.${space}`, () => {
+        if (this.get('state') == 'loading') {
           return
         }
         if ($(document).height() - $window.scrollTop() - $window.height() < threshold) {

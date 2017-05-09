@@ -1,6 +1,6 @@
 
 /*!
- * vir-ui-loadmore v1.0.0
+ * vir-ui-loadmore v1.1.0
  * (c) 2017 cjg
  * Released under the MIT License.
  */
@@ -27,34 +27,35 @@ var index = function () {
   return Vir({
     data: {
       data: [],
-      lock: false,
       state: 'pending'
     },
     events: (_events = {}, _events['click->' + buttonSelector + ''] = 'load', _events),
     watch: {
       data: function data(result) {
         this.render(result.value);
+      },
+      state: function state(result) {
+        if (result.value == 'finish') {
+          this.destroy();
+        }
       }
     },
     methods: {
       load: function load() {
         var _this = this;
 
-        if (this.get('lock')) {
+        var state = this.get('state');
+        if (state == 'loading' || state == 'finish') {
           return;
         }
-        this.set({
-          'state': 'loading',
-          'lock': true
+        this.set('state', 'loading');
+        this.fetch(function (state) {
+          _this.set('state', state);
         });
-        this.fetch(function () {
-          var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'done';
-
-          _this.set({
-            'state': state,
-            'lock': false
-          });
-        });
+      },
+      destroy: function destroy() {
+        var space = 'loadmore' + this._uid;
+        $(window).off('scroll.' + space + ' resize.' + space);
       },
       fetch: function fetch(done) {},
       render: function render(data) {}
@@ -67,8 +68,9 @@ var index = function () {
       }
 
       var $window = $(window);
-      $window.on('scroll resize', function () {
-        if (_this2.get('lock')) {
+      var space = 'loadmore' + this._uid;
+      $window.on('scroll.' + space + ' resize.' + space, function () {
+        if (_this2.get('state') == 'loading') {
           return;
         }
         if ($(document).height() - $window.scrollTop() - $window.height() < threshold) {

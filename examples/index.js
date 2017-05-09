@@ -9,21 +9,6 @@ var app = new App({
   data: {
     page: 1
   },
-  watch: {
-    state: function (result) {
-      // 判断 状态 默认 'loading' or 'done'
-      // last 是自定义的
-      var state = result.value
-      console.log('state ->', state)
-      if (state == 'loading') {
-        this.$$('.more').html('loading...')
-      } else if (state == 'done') {
-        this.$$('.more').html('加载更多')
-      } else if (state == 'last') {
-        this.$$('.more').html('最后一页')
-      }
-    }
-  },
   methods: {
     render: function (data) {
       // 只处理模版
@@ -34,13 +19,26 @@ var app = new App({
     fetch: function (done) {
       // 拉取数据
       let page = this.get('page')
-      console.log('page ->', page)
+      // 模拟异步加载
       setTimeout(function () {
-        this.set('data', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        this.set('data', [page, page, page, page, page, page, page, page])
         this.set('page', page + 1)
-        done(page > 4 ? 'last' : 'done')
+        done(page > 2 ? 'finish' : 'done')
       }.bind(this), 800)
     }
+  },
+  inited() {
+    this.$watch('state', function (result) {
+      // 判断 状态 'loading'、 'done'、'finish'
+      var state = result.value
+      if (state == 'loading') {
+        this.$$('.more').html('loading...')
+      } else if (state == 'done') {
+        this.$$('.more').html('加载更多')
+      } else if (state == 'finish') {
+        this.$$('.more').html('最后一页')
+      }
+    })
   }
 })
 
